@@ -49,7 +49,7 @@ Examples:
   crew claude --test /crew:analyze        # Test a specific command
   crew claude --export completions.json   # Export commands for external use
   crew claude --uninstall                 # Remove project integration`,
-	RunE: runClaude,
+		RunE: runClaude,
 	}
 
 	// Main operations
@@ -126,7 +126,7 @@ func runClaude(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to get home directory: %w", err)
 		}
-		claudeFlags.CommandsDir = filepath.Join(home, ".claude", "commands")
+		claudeFlags.CommandsDir = filepath.Join(home, ".claude", "commands", "crew")
 	}
 
 	// Display header
@@ -213,7 +213,7 @@ func installClaudeIntegration(integration *claude.ClaudeIntegration) error {
 
 	// Install project-specific integration
 	log.Info("Setting up project-level Claude Code integration...")
-	
+
 	// The claudeFlags.ClaudeDir is already set to project/.claude
 	projectClaudeDir := claudeFlags.ClaudeDir
 	projectAgentsDir := filepath.Join(projectClaudeDir, "agents")
@@ -230,18 +230,18 @@ func installClaudeIntegration(integration *claude.ClaudeIntegration) error {
 	// Create project marker file
 	projectMarker := filepath.Join(projectClaudeDir, "project-config.json")
 	projectConfig := map[string]interface{}{
-		"version": "1.0",
-		"project_path": projectDir,
+		"version":         "1.0",
+		"project_path":    projectDir,
 		"global_commands": claudeFlags.CommandsDir,
-		"created_at": time.Now().Format(time.RFC3339),
-		"type": "project-integration",
+		"created_at":      time.Now().Format(time.RFC3339),
+		"type":            "project-integration",
 	}
-	
+
 	configData, err := json.MarshalIndent(projectConfig, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal project config: %w", err)
 	}
-	
+
 	if err := os.WriteFile(projectMarker, configData, 0644); err != nil {
 		return fmt.Errorf("failed to write project config: %w", err)
 	}
@@ -330,7 +330,7 @@ func showClaudeStatus(integration *claude.ClaudeIntegration) error {
 	globalInstalled := isFrameworkInstalled()
 	if globalInstalled {
 		fmt.Printf("%s✅ Global Framework Installed%s\n", ui.ColorGreen, ui.ColorReset)
-		
+
 		// Show command count
 		installDir := getGlobalInstallDir()
 		commandsDir := filepath.Join(installDir, "SuperCrew", "Commands")
@@ -349,7 +349,7 @@ func showClaudeStatus(integration *claude.ClaudeIntegration) error {
 
 	// Check project-level integration
 	fmt.Printf("\n%sProject Status:%s %s\n", ui.ColorCyan, ui.ColorReset, projectDir)
-	
+
 	// Check for project .claude directory using configured project path
 	projectClaudeDir := claudeFlags.ClaudeDir
 	projectAgentsDir := filepath.Join(projectClaudeDir, "agents")
@@ -357,13 +357,13 @@ func showClaudeStatus(integration *claude.ClaudeIntegration) error {
 	if _, err := os.Stat(projectAgentsDir); err == nil {
 		projectIntegrated = true
 		fmt.Printf("%s✅ Project Integration Active%s\n", ui.ColorGreen, ui.ColorReset)
-		
+
 		// Check for orchestrator
 		orchestratorPath := filepath.Join(projectAgentsDir, "orchestrator-specialist.md")
 		if _, err := os.Stat(orchestratorPath); err == nil {
 			fmt.Printf("%s✅ Orchestrator Installed%s\n", ui.ColorGreen, ui.ColorReset)
 		}
-		
+
 		// Count project specialists
 		if entries, err := os.ReadDir(projectAgentsDir); err == nil {
 			specialistCount := 0
@@ -374,7 +374,7 @@ func showClaudeStatus(integration *claude.ClaudeIntegration) error {
 			}
 			fmt.Printf("%sProject Specialists:%s %d agents\n", ui.ColorBlue, ui.ColorReset, specialistCount)
 		}
-		
+
 		// Show project integration path
 		fmt.Printf("%sProject Path:%s %s\n", ui.ColorBlue, ui.ColorReset, projectClaudeDir)
 	} else {

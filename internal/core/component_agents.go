@@ -24,12 +24,12 @@ func NewAgentsComponent(installDir, sourceDir string) *AgentsComponent {
 		BaseComponent: BaseComponent{
 			InstallDir: installDir,
 			Metadata: ComponentMetadata{
-				Name:        "agents",
-				Version:     AgentsComponentVersion,
-				Description: "Claude Code Super Crew persona subagent files and templates",
-				Category:    "agents",
-				Author:      "Claude Code Super Crew Team",
-				Tags:        []string{"personas", "subagents", "templates"},
+				Name:         "agents",
+				Version:      AgentsComponentVersion,
+				Description:  "Claude Code Super Crew persona subagent files and templates",
+				Category:     "agents",
+				Author:       "Claude Code Super Crew Team",
+				Tags:         []string{"personas", "subagents", "templates"},
 				Dependencies: []string{"core"}, // Agents depend on core being installed
 			},
 		},
@@ -40,10 +40,10 @@ func NewAgentsComponent(installDir, sourceDir string) *AgentsComponent {
 	// Initialize managers
 	c.InitManagers(installDir)
 
-	// Discover agent files
+	// Discover agent files recursively to include templates subdirectory
 	if sourceDir != "" {
-		// Look for .md files in the agents directory
-		if files, err := c.DiscoverFiles(sourceDir, ".md", []string{}); err == nil {
+		// Look for .md files in the agents directory and subdirectories
+		if files, err := c.DiscoverFilesRecursive(sourceDir, ".md", []string{}); err == nil {
 			c.ComponentFiles = files
 			c.log.Debug(fmt.Sprintf("Discovered %d agent files: %v", len(files), files))
 		} else {
@@ -54,12 +54,53 @@ func NewAgentsComponent(installDir, sourceDir string) *AgentsComponent {
 	return c
 }
 
-// GetFilesToInstall returns list of agent files to install
+// DiscoverFilesRecursive discovers files recursively in directory and subdirectories
+func (c *AgentsComponent) DiscoverFilesRecursive(directory string, extension string, excludePatterns []string) ([]string, error) {
+	var files []string
+
+	err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		// Get relative path from source directory
+		relPath, err := filepath.Rel(directory, path)
+		if err != nil {
+			return err
+		}
+
+		name := info.Name()
+
+		// Check extension
+		if !strings.HasSuffix(strings.ToLower(name), strings.ToLower(extension)) {
+			return nil
+		}
+
+		// Check exclude patterns
+		for _, pattern := range excludePatterns {
+			if name == pattern {
+				return nil
+			}
+		}
+
+		files = append(files, relPath)
+		return nil
+	})
+
+	return files, err
+}
+
+// GetFilesToInstall returns list of agent files to install with preserved directory structure
 func (c *AgentsComponent) GetFilesToInstall() []FilePair {
 	pairs := make([]FilePair, 0, len(c.ComponentFiles))
 
 	for _, file := range c.ComponentFiles {
 		source := filepath.Join(c.sourceDir, file)
+		// Preserve directory structure (e.g., templates/file.md -> agents/templates/file.md)
 		target := filepath.Join(c.InstallDir, "agents", file)
 		pairs = append(pairs, FilePair{
 			Source: source,
@@ -103,7 +144,13 @@ func (c *AgentsComponent) ValidatePrerequisites(installDir string) (bool, []stri
 	filesToInstall := c.GetFilesToInstall()
 	fileNames := make([]string, len(filesToInstall))
 	for i, pair := range filesToInstall {
-		fileNames[i] = filepath.Base(pair.Source)
+		// Use relative path from source directory to support subdirectories
+		relPath, err := filepath.Rel(c.sourceDir, pair.Source)
+		if err != nil {
+			fileNames[i] = filepath.Base(pair.Source) // Fallback to base name
+		} else {
+			fileNames[i] = relPath
+		}
 	}
 
 	targetDir := filepath.Join(installDir, "agents")
@@ -142,6 +189,13 @@ func (c *AgentsComponent) Install(installDir string, config map[string]interface
 	for _, pair := range filesToInstall {
 		c.log.Debug(fmt.Sprintf("Installing agent file from %s to %s", pair.Source, pair.Target))
 
+		// Ensure target directory exists (for subdirectories like templates/)
+		targetDir := filepath.Dir(pair.Target)
+		if err := c.FileManager.EnsureDirectory(targetDir); err != nil {
+			c.log.Error(fmt.Sprintf("Failed to create directory %s: %v", targetDir, err))
+			continue
+		}
+
 		if err := c.FileManager.CopyFile(pair.Source, pair.Target); err != nil {
 			c.log.Error(fmt.Sprintf("Failed to install agent file %s: %v", filepath.Base(pair.Source), err))
 			continue
@@ -172,7 +226,7 @@ func (c *AgentsComponent) Install(installDir string, config map[string]interface
 
 // Update backs up existing agent files and installs the new version
 func (c *AgentsComponent) Update(installDir string, config map[string]interface{}) error {
-	c.log.Info(fmt.Sprintf("Updating agents component from version %s to %s", 
+	c.log.Info(fmt.Sprintf("Updating agents component from version %s to %s",
 		c.GetInstalledVersion(installDir), c.Metadata.Version))
 
 	// Create backup of existing agent files
@@ -211,7 +265,7 @@ func (c *AgentsComponent) Uninstall(installDir string, config map[string]interfa
 	// List of standard agent files to remove (preserve user-created agents)
 	standardAgentFiles := []string{
 		"architect-persona.md",
-		"frontend-persona.md", 
+		"frontend-persona.md",
 		"backend-persona.md",
 		"security-persona.md",
 		"performance-persona.md",
@@ -322,7 +376,7 @@ func (c *AgentsComponent) ValidateInstallation(installDir string) (bool, []strin
 	// Check for essential persona files
 	essentialPersonas := []string{
 		"architect-persona.md",
-		"frontend-persona.md", 
+		"frontend-persona.md",
 		"backend-persona.md",
 		"security-persona.md",
 	}
@@ -396,7 +450,7 @@ func (c *AgentsComponent) ValidateVersionCompatibility(installDir string) error 
 				if version, ok := framework["version"].(string); ok && version != "" {
 					// Check compatibility (for now, require exact match for major version)
 					if !c.isVersionCompatible(installedVersion, version) {
-						return fmt.Errorf("agents version %s is not compatible with framework version %s", 
+						return fmt.Errorf("agents version %s is not compatible with framework version %s",
 							installedVersion, version)
 					}
 				}
@@ -416,7 +470,7 @@ func (c *AgentsComponent) isVersionCompatible(agentsVersion, frameworkVersion st
 	// In production, this could be more sophisticated
 	agentsMajor := strings.Split(agentsVersion, ".")[0]
 	frameworkMajor := strings.Split(frameworkVersion, ".")[0]
-	
+
 	return agentsMajor == frameworkMajor
 }
 
@@ -445,19 +499,19 @@ func (c *AgentsComponent) RequiresUpdate(installDir string) (bool, string, error
 // GetUpdateStrategy returns the recommended update strategy for the agents component
 func (c *AgentsComponent) GetUpdateStrategy(installDir string) string {
 	installedVersion := c.GetInstalledVersion(installDir)
-	
+
 	if installedVersion == "" {
 		return "install" // Fresh installation
 	}
-	
+
 	// Check if this is a major version change
 	installedMajor := strings.Split(installedVersion, ".")[0]
 	newMajor := strings.Split(c.Metadata.Version, ".")[0]
-	
+
 	if installedMajor != newMajor {
 		return "upgrade" // Major version upgrade
 	}
-	
+
 	return "update" // Minor/patch update
 }
 
@@ -478,12 +532,12 @@ func (c *AgentsComponent) PrepareForUpdate(installDir string) error {
 	estimatedSize := c.GetSizeEstimate()
 	// Add 20% buffer for temporary files during update
 	requiredSpace := estimatedSize + (estimatedSize / 5)
-	
+
 	// Simple check - ensure we have at least the estimated space
 	// In production, this would be more sophisticated
 	if availableSpace, err := c.getAvailableDiskSpace(installDir); err == nil {
 		if availableSpace < requiredSpace {
-			return fmt.Errorf("insufficient disk space: need %d bytes, have %d bytes", 
+			return fmt.Errorf("insufficient disk space: need %d bytes, have %d bytes",
 				requiredSpace, availableSpace)
 		}
 	}
