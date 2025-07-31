@@ -1,0 +1,15 @@
+# Test artifact exclusions - Regenerable content only
+results/
+*.log
+test_report_*.md
+test_results.csv
+
+# Temporary test files
+*.tmp
+*.cache
+*.pid
+
+# OS-specific test artifacts
+.DS_Store
+Thumbs.db
+EOF < /dev/null

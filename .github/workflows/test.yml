@@ -1,0 +1,313 @@
+# GitHub Actions Workflow for Claude Code Super Crew
+# Runs both unit tests and integration tests on push and pull requests
+name: Test Suite
+
+# Trigger on push to main/develop branches and all pull requests
+on:
+  push:
+    branches: [ main, develop, master ]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+  pull_request:
+    branches: [ main, develop, master ]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+  workflow_dispatch: # Allow manual triggering
+
+# Set default permissions
+permissions:
+  contents: read
+
+# Define reusable environment variables
+env:
+  GO_VERSION: '1.21'
+  GOOS: linux
+  GOARCH: amd64
+
+jobs:
+  # Job 1: Unit Tests
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for better caching
+
+      # Step 2: Set up Go environment
+      - name: Set up Go ${{ env.GO_VERSION }}
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: go.sum
+
+      # Step 3: Verify Go installation
+      - name: Verify Go installation
+        run: |
+          go version
+          go env GOROOT
+          go env GOPATH
+
+      # Step 4: Download and cache dependencies
+      - name: Download dependencies
+        run: |
+          go mod download
+          go mod verify
+
+      # Step 5: Run Go unit tests
+      - name: Run Go unit tests
+        run: |
+          echo "🧪 Running Go unit tests..."
+          go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+          
+      # Step 6: Generate coverage report
+      - name: Generate coverage report
+        run: |
+          go tool cover -html=coverage.out -o coverage.html
+          go tool cover -func=coverage.out
+
+      # Step 7: Upload coverage to artifacts
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: coverage-report
+          path: |
+            coverage.out
+            coverage.html
+          retention-days: 7
+
+  # Job 2: Build Application
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: unit-tests
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Go environment
+      - name: Set up Go ${{ env.GO_VERSION }}
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: go.sum
+
+      # Step 3: Build the application
+      - name: Build crew binary
+        run: |
+          echo "🔨 Building crew binary..."
+          go build -v -o crew ./cmd/crew
+          ./crew version
+          chmod +x crew
+
+      # Step 4: Verify binary functionality
+      - name: Verify binary basic functionality
+        run: |
+          echo "✅ Testing basic binary functionality..."
+          ./crew --help
+          ./crew version
+          ./crew install --help
+
+      # Step 5: Upload binary as artifact
+      - name: Upload crew binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: crew-binary
+          path: crew
+          retention-days: 7
+
+  # Job 3: Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Go environment
+      - name: Set up Go ${{ env.GO_VERSION }}
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: go.sum
+
+      # Step 3: Download crew binary from build job
+      - name: Download crew binary
+        uses: actions/download-artifact@v3
+        with:
+          name: crew-binary
+          path: .
+
+      # Step 4: Make binary executable
+      - name: Make crew binary executable
+        run: chmod +x ./crew
+
+      # Step 5: Run Go integration tests
+      - name: Run Go integration tests
+        run: |
+          echo "🧪 Running Go integration tests..."
+          cd test/integration
+          go test -v -timeout=10m -tags=integration ./...
+
+      # Step 6: Run CLI integration tests
+      - name: Run CLI integration tests
+        run: |
+          echo "🧪 Running CLI integration tests..."
+          cd test
+          chmod +x unified_test_runner.sh
+          ./unified_test_runner.sh --mode comprehensive --format json
+
+      # Step 7: Upload test results
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            test/results/
+            test/*.log
+          retention-days: 7
+
+  # Job 4: End-to-End Tests
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Download crew binary
+      - name: Download crew binary
+        uses: actions/download-artifact@v3
+        with:
+          name: crew-binary
+          path: .
+
+      # Step 3: Make binary executable
+      - name: Make binary executable
+        run: chmod +x ./crew
+
+      # Step 4: Test complete installation workflow
+      - name: Test installation workflow
+        run: |
+          echo "🚀 Testing complete installation workflow..."
+          
+          # Test 1: Fresh installation
+          ./crew install --install-dir $HOME/test-claude --minimal --yes
+          
+          # Test 2: Verify installation
+          ls -la $HOME/test-claude/
+          test -f $HOME/test-claude/CLAUDE.md
+          
+          # Test 3: Update functionality
+          ./crew update --install-dir $HOME/test-claude --check
+          
+          # Test 4: Uninstall functionality
+          ./crew uninstall --install-dir $HOME/test-claude --yes
+
+      # Step 5: Test error conditions
+      - name: Test error conditions
+        run: |
+          echo "🔍 Testing error conditions..."
+          
+          # Test invalid component
+          if ./crew install --components invalid --yes; then
+            echo "❌ Should have failed with invalid component"
+            exit 1
+          else
+            echo "✅ Correctly rejected invalid component"
+          fi
+          
+          # Test conflicting flags
+          if ./crew install --minimal --quick --yes; then
+            echo "❌ Should have failed with conflicting flags"
+            exit 1
+          else
+            echo "✅ Correctly rejected conflicting flags"
+          fi
+
+  # Job 5: Test Summary
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [unit-tests, integration-tests, e2e-tests]
+    if: always()
+
+    steps:
+      # Step 1: Checkout for summary script
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Download all test artifacts
+      - name: Download test artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts/
+
+      # Step 3: Generate test summary
+      - name: Generate test summary
+        run: |
+          echo "📊 Test Summary Report" >> $GITHUB_STEP_SUMMARY
+          echo "======================" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check job results
+          if [ "${{ needs.unit-tests.result }}" == "success" ]; then
+            echo "✅ Unit Tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Unit Tests: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.integration-tests.result }}" == "success" ]; then
+            echo "✅ Integration Tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Integration Tests: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.e2e-tests.result }}" == "success" ]; then
+            echo "✅ End-to-End Tests: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ End-to-End Tests: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **Artifacts Available:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "- Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Crew Binary" >> $GITHUB_STEP_SUMMARY
+
+      # Step 4: Check overall status
+      - name: Check overall test status
+        run: |
+          if [ "${{ needs.unit-tests.result }}" == "success" ] && \
+             [ "${{ needs.integration-tests.result }}" == "success" ] && \
+             [ "${{ needs.e2e-tests.result }}" == "success" ]; then
+            echo "🎉 All tests passed successfully!"
+          else
+            echo "❌ Some tests failed. Check the summary above."
+            exit 1
+          fi
