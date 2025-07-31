@@ -1,3 +1,4 @@
+
 package cli
 
 import (
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jonwraymond/claude-code-super-crew/internal/claude"
+	"github.com/jonwraymond/claude-code-super-crew/internal/managers"
 	"github.com/jonwraymond/claude-code-super-crew/internal/orchestrator"
 	"github.com/jonwraymond/claude-code-super-crew/internal/ui"
 	"github.com/jonwraymond/claude-code-super-crew/pkg/logger"
@@ -106,13 +108,17 @@ func runClaude(cmd *cobra.Command, args []string) error {
 	}
 
 	// Determine project directory
+	pwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
 	if claudeFlags.ProjectDir == "" {
-		// Default to current working directory for project-level installation
-		pwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("failed to get current directory: %w", err)
-		}
 		claudeFlags.ProjectDir = pwd
+	} else {
+		// If a project directory is provided, we need to make sure we are in it
+		if err := os.Chdir(claudeFlags.ProjectDir); err != nil {
+			return fmt.Errorf("failed to change directory to %s: %w", claudeFlags.ProjectDir, err)
+		}
 	}
 
 	// Set claude directory based on project directory
@@ -129,19 +135,11 @@ func runClaude(cmd *cobra.Command, args []string) error {
 		claudeFlags.CommandsDir = filepath.Join(home, ".claude", "commands", "crew")
 	}
 
-	// Display header
-	if !globalFlags.Quiet {
-		ui.DisplayHeader(
-			"Claude Code Super Crew Integration v1.0",
-			"Manage Claude Code integration for /crew: commands",
-		)
-	}
-
 	// Create integration manager
 	integration, err := claude.NewClaudeIntegration(claudeFlags.CommandsDir, claudeFlags.ClaudeDir)
 	if err != nil {
 		// Check if it's because framework isn't installed
-		if _, statErr := os.Stat(claudeFlags.CommandsDir); os.IsNotExist(statErr) {
+		if _, statErr := os.Stat(getGlobalInstallDir()); os.IsNotExist(statErr) {
 			log.Error("SuperCrew framework not found. The global framework must be installed first.")
 			log.Info("")
 			log.Info("Run these commands:")
@@ -191,7 +189,8 @@ func installClaudeIntegration(integration *claude.ClaudeIntegration) error {
 
 	// Check if framework is installed globally
 	if !isFrameworkInstalled() {
-		log.Error("SuperCrew framework not found in ~/.claude/")
+		installDir := getGlobalInstallDir()
+		log.Errorf("SuperCrew framework not found in %s", installDir)
 		log.Info("Please run 'crew install' first to install the global framework")
 		log.Info("Then run 'crew claude --install' to enable this project")
 		return fmt.Errorf("framework not installed - run 'crew install' first")
@@ -213,6 +212,15 @@ func installClaudeIntegration(integration *claude.ClaudeIntegration) error {
 
 	// Install project-specific integration
 	log.Info("Setting up project-level Claude Code integration...")
+
+	// Ensure all required components are available for project-level install
+	componentsToInstall := []string{"core", "commands", "agents"}
+	for _, component := range componentsToInstall {
+		if !isComponentInstalled(component) {
+			log.Errorf("Component '%s' is not installed globally. Run 'crew install' first.", component)
+			return fmt.Errorf("missing required component: %s", component)
+		}
+	}
 
 	// The claudeFlags.ClaudeDir is already set to project/.claude
 	projectClaudeDir := claudeFlags.ClaudeDir
@@ -257,7 +265,7 @@ func installClaudeIntegration(integration *claude.ClaudeIntegration) error {
 
 		fmt.Printf("\n%sNext steps:%s\n", ui.ColorCyan, ui.ColorReset)
 		fmt.Println("1. Restart Claude Code to load the project commands")
-		fmt.Println("2. Run '/crew:load' to analyze this project")
+		fmt.Println("2. Run '/crew:onboard' to analyze this project")
 		fmt.Println("3. Use '/crew:help' to see available agents and commands")
 		fmt.Printf("\nProject: %s\n", projectDir)
 	}
@@ -330,19 +338,8 @@ func showClaudeStatus(integration *claude.ClaudeIntegration) error {
 	globalInstalled := isFrameworkInstalled()
 	if globalInstalled {
 		fmt.Printf("%s✅ Global Framework Installed%s\n", ui.ColorGreen, ui.ColorReset)
-
-		// Show command count
-		installDir := getGlobalInstallDir()
-		commandsDir := filepath.Join(installDir, "SuperCrew", "Commands")
-		if entries, err := os.ReadDir(commandsDir); err == nil {
-			cmdCount := 0
-			for _, entry := range entries {
-				if strings.HasSuffix(entry.Name(), ".md") {
-					cmdCount++
-				}
-			}
-			fmt.Printf("%sGlobal Commands:%s %d available\n", ui.ColorBlue, ui.ColorReset, cmdCount)
-		}
+		// Show command count from the integration status check, which correctly reads the global command directory.
+		fmt.Printf("%sGlobal Commands:%s %d available\n", ui.ColorBlue, ui.ColorReset, status.CommandCount)
 	} else {
 		fmt.Printf("%s❌ Global Framework Not Installed%s\n", ui.ColorRed, ui.ColorReset)
 	}
@@ -368,11 +365,12 @@ func showClaudeStatus(integration *claude.ClaudeIntegration) error {
 		if entries, err := os.ReadDir(projectAgentsDir); err == nil {
 			specialistCount := 0
 			for _, entry := range entries {
-				if strings.HasSuffix(entry.Name(), "-specialist.md") {
+				// Exclude the main orchestrator from the count of custom specialists
+				if strings.HasSuffix(entry.Name(), "-specialist.md") && entry.Name() != "orchestrator-specialist.md" {
 					specialistCount++
 				}
 			}
-			fmt.Printf("%sProject Specialists:%s %d agents\n", ui.ColorBlue, ui.ColorReset, specialistCount)
+			fmt.Printf("%sCustom Specialists:%s %d agents\n", ui.ColorBlue, ui.ColorReset, specialistCount)
 		}
 
 		// Show project integration path
@@ -568,20 +566,72 @@ func exportClaudeCommands(integration *claude.ClaudeIntegration, outputFile stri
 // isFrameworkInstalled checks if the global SuperCrew framework is installed
 func isFrameworkInstalled() bool {
 	installDir := getGlobalInstallDir()
-	// Check for official Claude commands directory
-	commandsDir := filepath.Join(installDir, "commands")
-	_, err := os.Stat(commandsDir)
-	return err == nil
+	if installDir == "" {
+		return false
+	}
+
+	// Ensure we have an absolute path for consistent metadata file resolution
+	if !filepath.IsAbs(installDir) {
+		pwd, err := os.Getwd()
+		if err != nil {
+			return false
+		}
+		installDir = filepath.Join(pwd, installDir)
+	}
+
+	// Use the same robust check as other commands ('update', 'backup', etc.).
+	// This checks for the existence of installation metadata, which is a reliable
+	// indicator of a complete global installation.
+	settingsManager := managers.NewSettingsManager(installDir)
+	result := settingsManager.CheckInstallationExists()
+	
+	// Debug logging
+	log := logger.GetLogger()
+	log.Debugf("Checking framework installation in: %s", installDir)
+	log.Debugf("Installation check result: %t", result)
+	
+	return result
 }
 
 // getGlobalInstallDir returns the global installation directory
 func getGlobalInstallDir() string {
 	if globalFlags.InstallDir != "" {
-		return globalFlags.InstallDir
+		// Ensure we return an absolute path
+		installDir := globalFlags.InstallDir
+		if !filepath.IsAbs(installDir) {
+			// Convert relative path to absolute
+			pwd, err := os.Getwd()
+			if err != nil {
+				return ""
+			}
+			installDir = filepath.Join(pwd, installDir)
+		}
+		return installDir
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return ""
 	}
 	return filepath.Join(home, ".claude")
+}
+
+func isComponentInstalled(componentName string) bool {
+	installDir := getGlobalInstallDir()
+
+	switch componentName {
+	case "core":
+		coreMarker := filepath.Join(installDir, "CLAUDE.md")
+		_, err := os.Stat(coreMarker)
+		return err == nil
+	case "commands":
+		commandsDir := filepath.Join(installDir, "commands")
+		_, err := os.Stat(commandsDir)
+		return err == nil
+	case "agents":
+		agentsDir := filepath.Join(installDir, "agents")
+		_, err := os.Stat(agentsDir)
+		return err == nil
+	default:
+		return false
+	}
 }

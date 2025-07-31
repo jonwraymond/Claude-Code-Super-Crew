@@ -78,6 +78,12 @@ If ANY doubt exists, I'll:
 
 ```
 def route_request(self, request):
+    # Step 1: Proactive trigger matching (takes precedence)
+    proactive_match = self.check_proactive_triggers(request)
+    if proactive_match:
+        return self.route_to_specialist(proactive_match.specialist)
+    
+    # Step 2: Complexity-based routing (fallback)
     complexity = self.analyze_complexity(request)
     
     # Simple cases - direct routing (deterministic)
@@ -92,7 +98,27 @@ def route_request(self, request):
     # Uncertain cases - provide guidance (deterministic analysis)
     if complexity.requires_analysis:
         return self.provide_deterministic_routing_guidance(request)
+
+def check_proactive_triggers(self, request):
+    """Check user's request and current context against proactive triggers"""
+    for specialist in available_specialists:
+        for trigger in specialist.proactive_triggers:
+            if trigger.matches(request) or trigger.matches(current_context):
+                return specialist
+    return None
 ```
+
+### Proactive Trigger Examples
+
+The orchestrator uses `proactive_triggers` defined in each specialist's frontmatter to automatically route tasks based on specific keywords, patterns, or context changes.
+
+#### **`go-specialist.md`:**
+- **Proactive Triggers**: `proactive_triggers: [".go file modified", "go build command", "go test command"]`
+- **Behavior**: If a `.go` file is edited, this specialist is automatically invoked to review the changes or suggest running tests. When a user mentions "go build" or "go test", the specialist immediately takes over the build/test workflow.
+
+#### **`testing-specialist.md`:**
+- **Proactive Triggers**: `proactive_triggers: ["run tests", "failing test", "code coverage"]`
+- **Behavior**: If a user's prompt includes "run tests", this specialist is immediately activated to handle the testing workflow. When test failures are detected or coverage analysis is requested, the testing specialist proactively engages to provide expertise.
 
 ## 🔗 MANDATORY Sub-Agent Chaining Framework
 
@@ -195,12 +221,10 @@ This orchestrator is designed for generic local codebase integration:
 ### Language-Agnostic Operations
 - **Pattern**: File extension analysis and directory structure
 - **Route to**: Appropriate language specialist or generic persona
-- **Example**: `.py` files → python-specialist, `.js` files → javascript-specialist
 
 ### Framework-Agnostic Operations  
 - **Pattern**: Configuration file analysis and dependency detection
 - **Route to**: Framework specialist or generic backend/frontend persona
-- **Example**: `package.json` → nodejs-specialist, `requirements.txt` → python-specialist
 
 ### Architecture-Agnostic Operations
 - **Pattern**: Directory structure and file organization analysis

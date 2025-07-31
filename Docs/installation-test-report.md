@@ -95,7 +95,7 @@ All 17 SuperCrew commands are now loading and available:
 | `/crew:implement` | Feature implementation | ✅ |
 | `/crew:improve` | Code improvement | ✅ |
 | `/crew:index` | Project documentation | ✅ |
-| `/crew:load` | Project context loading | ✅ |
+| `/crew:onboard` | Project context loading | ✅ |
 | `/crew:spawn` | Task coordination | ✅ |
 | `/crew:task` | Complex task execution | ✅ |
 | `/crew:test` | Testing and coverage | ✅ |
@@ -169,7 +169,7 @@ The Claude Code SuperCrew installation is **fully functional** after resolving t
 
 **Next Steps**: 
 1. Restart Claude Code to load the project commands
-2. Run `/crew:load` to analyze the project
+2. Run `/crew:onboard` to analyze the project
 3. Begin using `/crew:` commands for development tasks
 
 The framework is now ready for production use with all 17 commands available and properly configured.

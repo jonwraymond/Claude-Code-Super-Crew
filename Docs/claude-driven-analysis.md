@@ -7,7 +7,7 @@ The Claude Code SuperCrew framework now uses Claude's intelligence to analyze pr
 ## How It Works
 
 ### 1. Template Creation (Go Code)
-When `/crew:load` is executed, the Go code simply:
+When `/crew:onboard` is executed, the Go code simply:
 - Installs/validates the orchestrator-specialist
 - Creates an empty `project-analysis.json` template
 - Provides instructions for Claude
@@ -155,7 +155,7 @@ Claude then analyzes the project using available tools:
 ## Usage Flow
 
 ```
-User: /crew:load
+User: /crew:onboard
   ↓
 Go Code: Creates orchestrator + empty template
   ↓
@@ -206,7 +206,7 @@ User: Benefits from intelligent orchestration
 4. Consider evolution - what patterns are emerging?
 
 ### For Users
-1. Run `/crew:load` when starting a project
+1. Run `/crew:onboard` when starting a project
 2. Let patterns emerge naturally
 3. Request specialists explicitly if needed
 4. Trust orchestrator routing recommendations

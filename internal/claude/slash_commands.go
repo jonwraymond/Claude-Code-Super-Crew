@@ -401,7 +401,7 @@ func (r *SlashCommandRegistry) handleTestCommand(args []string) error {
 }
 
 func (r *SlashCommandRegistry) handleLoadCommand(args []string) error {
-	r.logger.Info("🎭 [Orchestrator]: Routing /crew:load to global orchestrator agent")
+	r.logger.Info("🎭 [Orchestrator]: Routing /crew:onboard to global orchestrator agent")
 
 	// Get current working directory
 	workingDir, err := os.Getwd()
@@ -447,11 +447,11 @@ func (r *SlashCommandRegistry) handleImplementCommand(args []string) error {
 	return nil
 }
 
-// generateLoadCommandMetaprompt creates the metaprompt for /crew:load orchestrator delegation
+// generateLoadCommandMetaprompt creates the metaprompt for /crew:onboard orchestrator delegation
 func (r *SlashCommandRegistry) generateLoadCommandMetaprompt(targetDir string) string {
 	return fmt.Sprintf(`You are the global orchestrator agent from ~/.claude/agents/orchestrator.agent.md. 
 
-TASK: Execute the /crew:load command for project analysis and setup.
+TASK: Execute the /crew:onboard command for project analysis and setup.
 
 PROJECT DIRECTORY: %s
 

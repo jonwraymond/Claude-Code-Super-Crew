@@ -335,7 +335,7 @@ func getComponentsToInstall(flags InstallFlags, registry *core.EnhancedComponent
 		// For now, use hardcoded profiles
 		switch flags.Profile {
 		case "quick":
-			return []string{"core", "commands"}, nil
+			return []string{"core", "commands", "agents"}, nil
 		case "minimal":
 			return []string{"core"}, nil
 		case "developer":
@@ -347,7 +347,7 @@ func getComponentsToInstall(flags InstallFlags, registry *core.EnhancedComponent
 
 	// Quick installation
 	if flags.Quick {
-		return []string{"core", "commands", "hooks"}, nil
+		return []string{"core", "commands", "hooks", "agents"}, nil
 	}
 
 	// Minimal installation
@@ -359,7 +359,7 @@ func getComponentsToInstall(flags InstallFlags, registry *core.EnhancedComponent
 	gFlags := GetGlobalFlags()
 	if gFlags.Yes {
 		// If --yes is set, default to quick installation to avoid interactive prompts
-		return []string{"core", "commands", "hooks"}, nil
+		return []string{"core", "commands", "hooks", "agents"}, nil
 	}
 
 	return interactiveComponentSelection(registry)
@@ -393,7 +393,7 @@ func interactiveComponentSelection(registry *core.EnhancedComponentRegistry) ([]
 	case -1: // Cancelled
 		return nil, fmt.Errorf("cancelled")
 	case 0: // Quick
-		return []string{"core", "commands", "hooks"}, nil
+		return []string{"core", "commands", "hooks", "agents"}, nil
 	case 1: // Minimal
 		return []string{"core"}, nil
 	case 2: // Custom
@@ -640,6 +640,13 @@ func performInstallation(components []string, flags InstallFlags, gFlags *Global
 
 			log.Info("SuperCrew framework installed successfully!")
 
+			// Install orchestrator-specialist agent
+			if err := installOrchestratorAgent(log, gFlags.InstallDir, projectRoot); err != nil {
+				log.Warnf("Failed to install orchestrator-specialist agent: %v", err)
+			} else {
+				log.Success("Orchestrator-specialist agent installed successfully")
+			}
+
 			// Metadata consistency is now handled automatically by unified system
 			log.Info("Unified metadata system - no migration needed")
 
@@ -664,6 +671,15 @@ func performInstallation(components []string, flags InstallFlags, gFlags *Global
 func shouldInstallComponent(component string, selectedComponents []string) bool {
 	if len(selectedComponents) == 0 {
 		return true // Install all if none specified
+	}
+
+	// If 'commands' is selected, ensure 'core' is also installed.
+	if component == "core" {
+		for _, selected := range selectedComponents {
+			if selected == "commands" {
+				return true
+			}
+		}
 	}
 
 	// Map component names to selection criteria
@@ -855,9 +871,14 @@ func shouldOverwriteFile(filePath, component string) bool {
 // shouldUpdateBasedOnVersion checks if component should be updated based on version metadata
 func shouldUpdateBasedOnVersion(component string) bool {
 	log := logger.GetLogger()
+	installDir := getGlobalInstallDir()
+	if installDir == "" {
+		log.Warn("Could not determine global install directory for version check.")
+		return true // Default to allowing update
+	}
 
 	// Try to read the current metadata file
-	metadataPath := filepath.Join(os.Getenv("HOME"), ".claude", ".crew", "config", "crew-metadata.json")
+	metadataPath := filepath.Join(installDir, ".crew", "config", "crew-metadata.json")
 	if _, err := os.Stat(metadataPath); os.IsNotExist(err) {
 		// No metadata file exists, this is a fresh install - allow all updates
 		log.Debug("No metadata file found, allowing all component updates")
@@ -1424,4 +1445,33 @@ func buildMergedCLAUDE(srcSections, existingSections map[string]string) string {
 	}
 
 	return strings.Join(result, "\n")
+}
+
+// installOrchestratorAgent installs the orchestrator-specialist.md agent file
+func installOrchestratorAgent(log logger.Logger, installDir, projectRoot string) error {
+	log.Info("Installing orchestrator-specialist agent...")
+	
+	// Define source and destination paths
+	sourceFile := filepath.Join(projectRoot, "SuperCrew", "agents", "orchestrator-specialist.md")
+	destDir := filepath.Join(installDir, "agents")
+	destFile := filepath.Join(destDir, "orchestrator-specialist.md")
+	
+	// Check if source file exists
+	if _, err := os.Stat(sourceFile); os.IsNotExist(err) {
+		log.Warnf("Source file not found: %s", sourceFile)
+		return fmt.Errorf("source file not found: %w", err)
+	}
+	
+	// Ensure destination directory exists
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return fmt.Errorf("failed to create agents directory: %w", err)
+	}
+	
+	// Copy the file
+	if err := copyFileSimple(sourceFile, destFile); err != nil {
+		return fmt.Errorf("failed to copy agent file: %w", err)
+	}
+	
+	log.Infof("Successfully installed agent file to: %s", destFile)
+	return nil
 }

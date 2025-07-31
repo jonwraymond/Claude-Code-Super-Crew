@@ -121,11 +121,6 @@ func (c *AgentsComponent) ValidatePrerequisites(installDir string) (bool, []stri
 		errors = append(errors, baseErrors...)
 	}
 
-	// Check that core component is installed (dependency)
-	coreMarker := filepath.Join(installDir, "CLAUDE.md")
-	if !c.FileManager.FileExists(coreMarker) {
-		errors = append(errors, "Core component must be installed before agents component")
-	}
 
 	// Check source directory exists
 	if c.sourceDir == "" {

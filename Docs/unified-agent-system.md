@@ -92,7 +92,7 @@ Persona agents are pre-installed in `~/.claude/agents/` and available globally.
 
 ### 2. Generating Project Agents
 
-When you run `/crew:load` or initialize a project:
+When you run `/crew:onboard` or initialize a project:
 
 1. **Project Analysis**: Detects languages, frameworks, and project type
 2. **Agent Generation**: Creates relevant project-specific agents
@@ -147,7 +147,7 @@ The 🎭 orchestrator-agent manages the entire agent ecosystem:
 - Maintain clear attribution for multi-agent responses
 
 ### 3. Project Integration
-- Run `/crew:load` to set up project agents
+- Run `/crew:onboard` to set up project agents
 - Keep project agents in `.claude/agents/`
 - Personas are shared across all projects
 
@@ -161,7 +161,7 @@ The 🎭 orchestrator-agent manages the entire agent ecosystem:
 
 1. **Initialize Project**:
    ```
-   /crew:load
+   /crew:onboard
    ```
    Output shows available personas and generated project agents.
 

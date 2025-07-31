@@ -10,7 +10,7 @@ This plan establishes the orchestrator-specialist as the sole deterministic agen
 
 #### Orchestrator-Specialist (Always Present)
 - **Location**: `.claude/agents/orchestrator-specialist.md`
-- **Installation**: Automatic on `/crew:load`
+- **Installation**: Automatic on `/crew:onboard`
 - **Updates**: Version-controlled with backup
 - **Customization**: Claude can modify based on project context
 
@@ -29,10 +29,10 @@ This plan establishes the orchestrator-specialist as the sole deterministic agen
 
 ## Implementation Steps
 
-### Step 1: Orchestrator Installation (/crew:load)
+### Step 1: Orchestrator Installation (/crew:onboard)
 
 ```go
-// When /crew:load is executed:
+// When /crew:onboard is executed:
 1. Install/update orchestrator-specialist.md
 2. Analyze project structure
 3. Save analysis to project-analysis.json

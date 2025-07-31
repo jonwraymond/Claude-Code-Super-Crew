@@ -81,11 +81,6 @@ func (c *CommandsComponent) ValidatePrerequisites(installDir string) (bool, []st
 		errors = append(errors, baseErrors...)
 	}
 
-	// Check core component is installed (dependency)
-	coreMarker := filepath.Join(installDir, "CLAUDE.md")
-	if !c.FileManager.FileExists(coreMarker) {
-		errors = append(errors, "Core component must be installed first")
-	}
 
 	// Check source directory
 	if c.sourceDir == "" {

@@ -57,3 +57,7 @@ wheels/
 .Trashes
 ehthumbs.db
 Desktop.ini
+
+qdrant_storage/
+
+bin/

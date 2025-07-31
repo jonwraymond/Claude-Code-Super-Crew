@@ -91,16 +91,16 @@ Support for external CLI tools:
 
 ## Workflow Improvements
 
-### 1. Project Load Process (`/crew:load`)
+### 1. Project Load Process (`/crew:onboard`)
 
 ```mermaid
 graph TD
-    A[/crew:load] --> B{Local Orchestrator Exists?}
+    A[/crew:onboard] --> B{Local Orchestrator Exists?}
     B -->|No| C[Prompt Claude to Create from Template]
     B -->|Yes| D[Create Project Analysis Template]
     C --> E[Claude Analyzes Project]
     E --> F[Creates Custom Orchestrator]
-    F --> G[Run /crew:load Again]
+    F --> G[Run /crew:onboard Again]
     D --> H[Claude Fills Analysis]
     H --> I[Prompt for Enhancements]
     I --> J[Create Specialists]

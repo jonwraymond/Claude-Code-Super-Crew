@@ -116,14 +116,14 @@ After installation:
 
 1. **Restart Claude Code** to load the new commands
 2. **Test the installation** by typing `/crew:` and pressing Tab
-3. **Run `/crew:load`** to analyze your project and set up orchestration
+3. **Run `/crew:onboard`** to analyze your project and set up orchestration
 
 ## Available Commands
 
 Once installed, you'll have access to these `/crew:` commands:
 
 - `/crew:help` - Show available agents and commands
-- `/crew:load` - Analyze project and set up orchestration
+- `/crew:onboard` - Analyze project and set up orchestration
 - `/crew:analyze` - Deep project analysis
 - `/crew:build` - Build workflows
 - `/crew:implement` - Implementation assistance
@@ -172,7 +172,7 @@ Once installed, you'll have access to these `/crew:` commands:
 ### Custom Installation Directory
 To install to a different directory:
 ```bash
-./crew claude --install --install-dir /path/to/custom/dir
+./crew install --install-dir /path/to/custom/dir
 ```
 
 ## Key Differences from Python Version
@@ -188,7 +188,7 @@ The Go implementation offers:
 
 After installation:
 1. Navigate to your project directory
-2. Run `/crew:load` in Claude Code to analyze your project
+2. Run `/crew:onboard` in Claude Code to analyze your project
 3. Use `/crew:help` to explore available agents
 4. Start using specialized agents for your tasks!
 

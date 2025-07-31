@@ -45,7 +45,6 @@ When using `--project` flag, performs comprehensive cleanup:
 - Log files: `*.log`, `*.debug`, `*.trace`
 - Temporary files: `*.tmp`, `*.temp`, `*.cache`
 - OS artifacts: `.DS_Store`, `Thumbs.db`, `desktop.ini`
-- Python: `__pycache__/`, `*.pyc`, `*.pyo`, `.pytest_cache/`
 - JavaScript/TypeScript: `dist/`, `build/`, `.next/`, `.nuxt/`
 - Coverage: `coverage/`, `.nyc_output/`, `*.lcov`
 - IDE: `.idea/`, `.vscode/workspace.settings`

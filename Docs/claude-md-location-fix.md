@@ -33,7 +33,7 @@ claudeFile := filepath.Join(lch.ProjectRoot, "CLAUDE.md")
 
 ## Behavior After Fix
 
-When running `crew claude --install` or `/crew:load`:
+When running `crew claude --install` or `/crew:onboard`:
 1. Creates `CLAUDE.md` in project root
 2. Creates `.claude/` directory for other project files
 3. Compatible with Claude's `/init` command

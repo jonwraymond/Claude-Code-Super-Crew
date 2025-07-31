@@ -31,7 +31,7 @@ The orchestrator-specialist is now the sole deterministic agent in the Claude Co
 - Visual identity and routing patterns
 
 ### 2. Installation System (`installer.go`)
-- Deterministic orchestrator installation on `/crew:load`
+- Deterministic orchestrator installation on `/crew:onboard`
 - Version checking and backup logic
 - Project analysis framework (no hardcoded agents)
 - Dynamic recommendations for Claude
@@ -72,7 +72,7 @@ Claude analyzes project and creates tailored specialist
 
 ## Key Commands
 
-### /crew:load
+### /crew:onboard
 - Installs/updates orchestrator-specialist
 - Analyzes project structure
 - Provides recommendations (not requirements)

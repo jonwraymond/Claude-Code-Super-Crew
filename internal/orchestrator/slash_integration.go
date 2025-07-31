@@ -21,7 +21,7 @@ func NewSlashCommandOrchestrator() *SlashCommandOrchestrator {
 	}
 }
 
-// HandleLoadCommand handles the /crew:load command with orchestrator integration
+// HandleLoadCommand handles the /crew:onboard command with orchestrator integration
 func (o *SlashCommandOrchestrator) HandleLoadCommand(args []string, workingDir string) error {
 	o.logger.Info("Orchestrator: Loading project with intelligent agent support...")
 

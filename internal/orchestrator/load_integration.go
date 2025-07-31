@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// LoadCommandHandler integrates with /crew:load command
+// LoadCommandHandler integrates with /crew:onboard command
 type LoadCommandHandler struct {
 	ProjectRoot   string
 	Installer     *OrchestratorInstaller
@@ -25,7 +25,7 @@ func NewLoadCommandHandler(projectRoot string) *LoadCommandHandler {
 	}
 }
 
-// Execute handles the /crew:load command - simplified for Claude analysis
+// Execute handles the /crew:onboard command - simplified for Claude analysis
 func (lch *LoadCommandHandler) Execute() error {
 	fmt.Println("🎯 Claude Code Super Crew - Project Load")
 	fmt.Println("═══════════════════════════════════════")
@@ -149,7 +149,7 @@ CLAUDE ANALYSIS WORKFLOW:
 `
 }
 
-// ExecuteWithEnhancements handles the /crew:load command with MCP and tools integration
+// ExecuteWithEnhancements handles the /crew:onboard command with MCP and tools integration
 func (lch *LoadCommandHandler) ExecuteWithEnhancements(mcpFlags []string, toolFlags []string) error {
 	// Run standard load process first
 	if err := lch.Execute(); err != nil {
@@ -430,7 +430,7 @@ func (lch *LoadCommandHandler) promptOrchestratorCreation() error {
 	fmt.Println("💡 Remember: The orchestrator should feel custom-built for THIS project!")
 	fmt.Println("It's the intelligent router that makes multi-agent workflows seamless.")
 	fmt.Println()
-	fmt.Println("After creating the orchestrator, run /crew:load again to continue setup.")
+	fmt.Println("After creating the orchestrator, run /crew:onboard again to continue setup.")
 	return nil
 }
 

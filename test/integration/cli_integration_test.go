@@ -369,10 +369,6 @@ func TestClaudeCommand(t *testing.T) {
 			contains: "Available /crew: Commands",
 		},
 		{
-			name: "claude export",
-			args: []string{"claude", "--export", "/tmp/test-export.json"},
-		},
-		{
 			name:     "claude test command",
 			args:     []string{"claude", "--test", "/crew:analyze"},
 			contains: "Testing Command",
@@ -391,9 +387,21 @@ func TestClaudeCommand(t *testing.T) {
 			}
 		})
 	}
-	
-	// Cleanup test export
-	os.Remove("/tmp/test-export.json")
+
+	t.Run("claude export", func(t *testing.T) {
+		tempFile := filepath.Join(t.TempDir(), "test-export.json")
+		output, err := runCrewCommand(t, "claude", "--export", tempFile)
+		if err != nil {
+			t.Errorf("runCrewCommand() error = %v", err)
+			return
+		}
+		if !strings.Contains(output, "Exported") {
+			t.Errorf("output %q does not contain 'Exported'", output)
+		}
+		if _, err := os.Stat(tempFile); os.IsNotExist(err) {
+			t.Errorf("export file %s was not created", tempFile)
+		}
+	})
 }
 
 // Test hooks command

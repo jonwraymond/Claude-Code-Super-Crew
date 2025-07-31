@@ -466,3 +466,8 @@ Persona system provides specialized AI behavior patterns optimized for specific 
 - **Context Override**: Project context can override default persona priorities
 - **User Preference**: Manual flags and user history override automatic decisions
 - **Escalation Path**: architect persona for system-wide conflicts, mentor for educational conflicts
+---
+
+## Agent Selection Guidelines
+
+*Content for agent selection criteria and decision-making frameworks to be added here. This section will define the process for the Global Orchestrator to select the appropriate specialists for a given task.*

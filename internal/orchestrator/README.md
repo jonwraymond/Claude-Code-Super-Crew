@@ -1,10 +1,10 @@
 # Orchestrator Agent Auto-Trigger System
 
-The orchestrator system automatically generates project-specific subagents when the `/crew:load` command is executed in a project directory.
+The orchestrator system automatically generates project-specific subagents when the `/crew:onboard` command is executed in a project directory.
 
 ## Overview
 
-When a user runs `/crew:load` (or variations like `crew:load`, `crew: init`) in a project:
+When a user runs `/crew:onboard` (or variations like `crew:load`, `crew: init`) in a project:
 
 1. The orchestrator agent analyzes the repository to detect:
    - Programming languages (Go, JavaScript, Python, etc.)
@@ -44,7 +44,7 @@ The `AgentGenerator` creates specialized agents:
 
 ### Integration (`slash_integration.go`)
 
-The orchestrator integrates with the `/crew:load` command:
+The orchestrator integrates with the `/crew:onboard` command:
 - Triggers automatically on project load
 - Works with any project directory
 - Logs progress and results
@@ -59,7 +59,7 @@ The orchestrator integrates with the `/crew:load` command:
 
 2. Run the load command:
    ```
-   /crew:load
+   /crew:onboard
    ```
 
 3. The orchestrator will:

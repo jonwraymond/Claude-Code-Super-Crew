@@ -983,7 +983,7 @@ When starting work on an unfamiliar project:
 
 ```bash
 # 1. Load project context
-/crew:load --deep --summary
+/crew:onboard --deep --summary
 # → Gives overview of structure, dependencies, patterns
 
 # 2. Analyze architecture  
@@ -1199,7 +1199,7 @@ For projects spanning multiple technical domains:
 # → Systematic investigation methodology
 
 # Check framework status
-/crew:load framework-status/ --summary
+/crew:onboard framework-status/ --summary
 # → Understand current Claude Code Super Crew state
 ```
 
@@ -1570,7 +1570,7 @@ Real-world scenarios showing Claude Code Super Crew in action. These examples de
 
 #### Step 1: Project Understanding
 ```bash
-/crew:load --deep --summary
+/crew:onboard --deep --summary
 ```
 **What happens**:
 - 🔍 analyzer persona activates (investigation needed)
@@ -2099,7 +2099,7 @@ Based on real-world usage patterns and successful workflows, here are practical 
 /crew:analyze huge-codebase/ --uc --delegate auto
 
 # For repeated analysis, cache results
-/crew:load project-context/  # Cache project understanding
+/crew:onboard project-context/  # Cache project understanding
 /crew:analyze specific-issue/  # Build on cached context
 
 # For simple questions, minimize overhead
@@ -2125,7 +2125,7 @@ Based on real-world usage patterns and successful workflows, here are practical 
 #### Optimize Command Sequences
 ```bash
 # ✅ Efficient sequence
-/crew:load project/           # Understand context once
+/crew:onboard project/           # Understand context once
 /crew:analyze --focus quality # Build on understanding
 /crew:improve --safe-mode     # Apply improvements
 /crew:test --coverage         # Validate changes
@@ -2495,7 +2495,7 @@ When Claude Code Super Crew doesn't work as expected, here's how to diagnose and
 /crew:troubleshoot "MCP servers not working" --introspect
 
 # Verify MCP installation
-/crew:load --summary  # Should show available MCP servers
+/crew:onboard --summary  # Should show available MCP servers
 
 # Test specific servers
 /crew:analyze react-app/ --c7     # Should use Context7
@@ -2624,7 +2624,7 @@ When Claude Code Super Crew doesn't work as expected, here's how to diagnose and
 **Solutions**:
 ```bash
 # Load project context first
-/crew:load --deep --summary
+/crew:onboard --deep --summary
 
 # Be explicit about project type
 /crew:analyze react-typescript-app/ --c7  # Include tech stack in description
